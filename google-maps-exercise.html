@@ -10,15 +10,33 @@
             width: 900px;
             height: 600px;
         }
+
+        #pac-input {
+            background-color: #fff;
+            font-family: Roboto;
+            font-size: 15px;
+            font-weight: 300;
+            margin-left: 12px;
+            padding: 0 11px 0 13px;
+            text-overflow: ellipsis;
+            width: 400px;
+        }
+
+        #pac-input:focus {
+            border-color: #4d90fe;
+        }
     </style>
 </head>
 <body>
+
+<!--search box-->
+<input id="pac-input" class="controls" type="text" placeholder="Search Box">
 
 <!-- div to hold map -->
 <div id="map-canvas"></div>
 
 <!-- Load the Google Maps API [DON'T FORGET TO USE A KEY] -->
-<script src="https://maps.googleapis.com/maps/api/js?keyAIzaSyBv5a8uvIXpx6AWGBqbYSXNgMMSk63dM2c"></script>
+<!--<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCxIPbNd4ljI6NdSyP5ugk4XoKDzw2VEZM"></script>-->
 
 <!-- Script to show address on map -->
 <script type="text/javascript">
@@ -90,7 +108,7 @@
 
     // ================ Bonus
 
-    (function () {
+    function initAutocomplete() {
 
         // Set our map options
         var mapOptions = {
@@ -110,6 +128,54 @@
 
         // Render the map
         var map = new google.maps.Map(document.getElementById("map-canvas"), mapOptions);
+
+        var input = document.getElementById('pac-input');
+        var searchBox = new google.maps.places.SearchBox(input);
+        map.controls[google.maps.ControlPosition.TOP_LEFT].push(input);
+
+        // Bias the SearchBox results towards current map's viewport.
+        map.addListener('bounds_changed', function() {
+            searchBox.setBounds(map.getBounds());
+        });
+
+        searchBox.addListener('places_changed', function() {
+            var places = searchBox.getPlaces();
+
+            if (places.length == 0) {
+                return;
+            }
+            // For each place, get the icon, name and location.
+            var bounds = new google.maps.LatLngBounds();
+            places.forEach(function (place) {
+                if (!place.geometry) {
+                    console.log("Returned place contains no geometry");
+                    return;
+                }
+                var icon = {
+                    url: place.icon,
+                    size: new google.maps.Size(71, 71),
+                    origin: new google.maps.Point(0, 0),
+                    anchor: new google.maps.Point(17, 34),
+                    scaledSize: new google.maps.Size(25, 25)
+                };
+
+                // Create a marker for each place.
+                markers.push(new google.maps.Marker({
+                    map: map,
+                    icon: icon,
+                    title: place.name,
+                    position: place.geometry.location
+                }));
+
+                if (place.geometry.viewport) {
+                    // Only geocodes have viewport.
+                    bounds.union(place.geometry.viewport);
+                } else {
+                    bounds.extend(place.geometry.location);
+                }
+            });
+            map.fitBounds(bounds);
+        });
 
         // Set our address to geocode
         // var address = "250 W Main St, Fort Kent, ME 04743";
@@ -187,12 +253,12 @@
             });
 
             // Add info window to marker
-            google.maps.event.addListener(marker, 'click', (function(marker, i) {
-                return function() {
-                    infoWindow.setContent(infoWindowContent[i][0]);
-                    infoWindow.open(map, marker);
-                }
-            })(marker, i));
+            // google.maps.event.addListener(marker, 'click', (function(marker, i) {
+            //     return function() {
+            //         infoWindow.setContent(infoWindowContent[i][0]);
+            //         infoWindow.open(map, marker);
+            //     }
+            // })(marker, i));
 
             google.maps.event.addListener(marker, 'mouseover', (function(marker, i) {
                 return function() {
@@ -200,9 +266,17 @@
                     infoWindow.open(map, marker);
                 }
             })(marker, i));
+            google.maps.event.addListener(marker, 'mouseout', (function(marker, i) {
+                return function() {
+                    infoWindow.setContent(infoWindowContent[i][0]);
+                    infoWindow.close(map, marker);
+                }
+            })(marker, i));
         }
-    })();
+    }
 
 </script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCxIPbNd4ljI6NdSyP5ugk4XoKDzw2VEZM&libraries=places&callback=initAutocomplete"
+        async defer></script>
 </body>
 </html>
